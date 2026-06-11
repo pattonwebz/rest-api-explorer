@@ -31,5 +31,9 @@ add_action( 'plugins_loaded', function (): void {
 	new RestApiExplorer\Admin\AdminPage();
 } );
 
+add_action( 'rest_api_init', function (): void {
+	RestApiExplorer\Rest\TestController::register();
+} );
+
 register_activation_hook( __FILE__, [ RestApiExplorer\Admin\RouteDiscovery::class, 'clear_cache' ] );
 register_deactivation_hook( __FILE__, [ RestApiExplorer\Admin\RouteDiscovery::class, 'clear_cache' ] );
