@@ -1,0 +1,12 @@
+{
+    "name": "rest-api-explorer",
+    "version": "1.0.0",
+    "description": "WordPress REST API Explorer plugin",
+    "scripts": {
+        "build": "wp-scripts build assets/js/index.js --output-path build",
+        "dev": "wp-scripts start assets/js/index.js --output-path build"
+    },
+    "devDependencies": {
+        "@wordpress/scripts": "^27.0.0"
+    }
+}
