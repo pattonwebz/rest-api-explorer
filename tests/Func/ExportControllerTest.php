@@ -26,6 +26,14 @@ class ExportControllerTest extends WP_UnitTestCase {
         $this->assertArrayHasKey( 'item', $data['content'] );
         $this->assertArrayHasKey( 'variable', $data['content'] );
     }
+    public function test_handle_unknown_format_falls_back_to_postman_payload(): void {
+        $request = new WP_REST_Request( 'GET', '/rest-api-explorer/v1/export' );
+        $request->set_param( 'format', 'xml' );
+        $response = ExportController::handle( $request );
+        $data     = $response->get_data();
+        $this->assertSame( 'api-collection.postman_collection.json', $data['filename'] );
+        $this->assertIsArray( $data['content'] );
+    }
     public function test_group_by_namespace_falls_back_to_core_for_empty_namespace(): void {
         $grouped = $this->invoke_private(
             ExportController::class,
@@ -40,6 +48,33 @@ class ExportControllerTest extends WP_UnitTestCase {
         $this->assertArrayHasKey( 'core', $grouped );
         $this->assertArrayHasKey( 'wp/v2', $grouped );
         $this->assertSame( '/x', $grouped['core'][0]['path'] );
+    }
+    public function test_to_markdown_renders_array_type_and_empty_defaults(): void {
+        $routes = [
+            [
+                'path'        => '/wp/v2/search',
+                'namespace'   => 'wp/v2',
+                'description' => '',
+                'endpoints'   => [
+                    [
+                        'methods'    => [ 'GET' ],
+                        'auth_level' => 'authenticated',
+                        'args'       => [
+                            [
+                                'name'        => 'type',
+                                'type'        => [ 'string', 'array' ],
+                                'required'    => false,
+                                'default'     => null,
+                                'description' => '',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        $markdown = $this->invoke_private( ExportController::class, 'to_markdown', [ $routes, 'https://example.test/wp-json' ] );
+        $this->assertStringContainsString( '| `type` | string|array | No | — | — |', $markdown );
+        $this->assertStringContainsString( '**Authentication:** Authenticated', $markdown );
     }
     public function test_to_markdown_renders_args_table_and_curl_example(): void {
         $routes = [
@@ -69,7 +104,7 @@ class ExportControllerTest extends WP_UnitTestCase {
         $this->assertStringContainsString( '| `page` | integer | No | `1` | Page number |', $markdown );
         $this->assertStringContainsString( 'curl -s -X GET "https://example.test/wp-json/wp/v2/posts" \\', $markdown );
     }
-    public function test_to_postman_adds_query_params_only_for_get_and_delete(): void {
+    public function test_to_postman_encodes_array_defaults_for_get_query(): void {
         $routes = [
             [
                 'path'        => '/wp/v2/posts',
@@ -79,7 +114,13 @@ class ExportControllerTest extends WP_UnitTestCase {
                     [
                         'methods' => [ 'GET' ],
                         'args'    => [
-                            [ 'name' => 'page', 'required' => false, 'default' => 2, 'description' => 'Page', 'type' => 'integer' ],
+                            [
+                                'name'        => 'include',
+                                'required'    => false,
+                                'default'     => [ 10, 12 ],
+                                'description' => 'IDs to include',
+                                'type'        => 'array',
+                            ],
                         ],
                     ],
                     [
@@ -94,9 +135,8 @@ class ExportControllerTest extends WP_UnitTestCase {
         $postman = $this->invoke_private( ExportController::class, 'to_postman', [ $routes, 'https://example.test/wp-json' ] );
         $items   = $postman['item'][0]['item'];
         $this->assertCount( 2, $items );
-        $this->assertSame( 'GET', $items[0]['request']['method'] );
-        $this->assertCount( 1, $items[0]['request']['url']['query'] );
-        $this->assertSame( 'POST', $items[1]['request']['method'] );
+        $this->assertSame( '[10,12]', $items[0]['request']['url']['query'][0]['value'] );
+        $this->assertTrue( $items[0]['request']['url']['query'][0]['disabled'] );
         $this->assertCount( 0, $items[1]['request']['url']['query'] );
     }
     private function invoke_private( string $class, string $method, array $args ) {

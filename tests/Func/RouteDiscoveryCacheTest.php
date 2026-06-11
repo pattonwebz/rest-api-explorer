@@ -12,6 +12,13 @@ class RouteDiscoveryCacheTest extends WP_UnitTestCase {
         set_transient( 'rae_routes', $cached, HOUR_IN_SECONDS );
         $this->assertSame( $cached, RouteDiscovery::get_routes() );
     }
+    public function test_get_routes_ignores_non_array_cache_and_rebuilds(): void {
+        set_transient( 'rae_routes', 'bad-cache', HOUR_IN_SECONDS );
+        $routes = RouteDiscovery::get_routes();
+        $this->assertIsArray( $routes );
+        $this->assertNotSame( 'bad-cache', $routes );
+        $this->assertIsArray( get_transient( 'rae_routes' ) );
+    }
     public function test_clear_cache_removes_transient(): void {
         set_transient( 'rae_routes', [ 'x' => 'y' ], HOUR_IN_SECONDS );
         RouteDiscovery::clear_cache();

@@ -24,6 +24,18 @@ class RouteFormatterExtendedTest extends WP_UnitTestCase {
         $this->assertSame( [ 'GET', 'POST', 'DELETE' ], $route['methods'] );
         $this->assertCount( 2, $route['endpoints'] );
     }
+    public function test_false_method_flags_produce_empty_formatted_methods_but_keep_endpoint(): void {
+        $route = RouteFormatter::format_route(
+            '/wp/v2/posts',
+            [
+                [ 'methods' => [ 'GET' => false, 'POST' => false ], 'permission_callback' => '__return_true' ],
+            ],
+            [ 'wp/v2' ]
+        );
+        $this->assertSame( [], $route['methods'] );
+        $this->assertCount( 1, $route['endpoints'] );
+        $this->assertSame( [], $route['endpoints'][0]['methods'] );
+    }
     public function test_formats_args_with_expected_defaults_and_skips_non_array_values(): void {
         $route = RouteFormatter::format_route(
             '/wp/v2/items',
@@ -64,6 +76,14 @@ class RouteFormatterExtendedTest extends WP_UnitTestCase {
         );
         $this->assertStringContainsString( static::class . '::dummy_permission()', $route['endpoints'][0]['permission_label'] );
     }
+    public function test_permission_label_formats_static_callback_array(): void {
+        $route = RouteFormatter::format_route(
+            '/wp/v2/test',
+            [ $this->make_endpoint( [ 'GET' => true ], [ __CLASS__, 'dummy_static_permission' ] ) ],
+            [ 'wp/v2' ]
+        );
+        $this->assertSame( __CLASS__ . '::dummy_static_permission()', $route['endpoints'][0]['permission_label'] );
+    }
     public function test_auth_level_is_custom_for_non_supported_callback_type(): void {
         $route = RouteFormatter::format_route(
             '/wp/v2/test',
@@ -86,6 +106,9 @@ class RouteFormatterExtendedTest extends WP_UnitTestCase {
         $this->assertSame( 'Create item', $route['description'] );
     }
     public function dummy_permission(): bool {
+        return true;
+    }
+    public static function dummy_static_permission(): bool {
         return true;
     }
     private function make_endpoint( array $methods, $permission_callback ): array {
