@@ -86,7 +86,8 @@ class ExportController {
 							$required = $arg['required'] ? 'Yes' : 'No';
 							$default  = $arg['default'] !== null ? '`' . json_encode( $arg['default'] ) . '`' : '—';
 							$desc     = $arg['description'] ?: '—';
-							$lines[]  = "| `{$arg['name']}` | {$arg['type']} | $required | $default | $desc |";
+							$type     = is_array( $arg['type'] ) ? implode( '|', $arg['type'] ) : (string) $arg['type'];
+							$lines[]  = "| `{$arg['name']}` | {$type} | $required | $default | $desc |";
 						}
 						$lines[] = '';
 					}

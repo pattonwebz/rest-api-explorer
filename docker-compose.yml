@@ -1,16 +1,13 @@
-version: "3.8"
-
 services:
   db-phpunit:
     image: mysql:5.7
     environment:
-      MYSQL_DATABASE: wordpress
-      MYSQL_USER: wordpress
+      MYSQL_DATABASE: ${DB_NAME:-wordpress}
+      MYSQL_USER: ${DB_USER:-wordpress}
       MYSQL_PASSWORD: ${DB_PASSWORD:-wordpress}
       MYSQL_ROOT_PASSWORD: root
     volumes:
       - db_data:/var/lib/mysql
-
   phpunit:
     image: pattonwebz/phpunit-wordpress:${PHPUNIT_IMAGE_TAG:-1.0.0}
     depends_on:
@@ -25,6 +22,5 @@ services:
     working_dir: /var/www/html/wp-content/plugins/rest-api-explorer
     entrypoint: ["/bin/bash"]
     tty: true
-
 volumes:
   db_data:

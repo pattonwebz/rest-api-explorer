@@ -15,16 +15,14 @@
             <file>./tests/bootstrap.php</file>
         </testsuite>
     </testsuites>
-
-    <!-- PHPUnit 10+ coverage format -->
-    <source>
+    <coverage>
         <include>
-            <directory>./src</directory>
+            <directory suffix=".php">./src</directory>
         </include>
         <exclude>
             <directory>./tests</directory>
             <directory>./vendor</directory>
             <directory>./node_modules</directory>
         </exclude>
-    </source>
+    </coverage>
 </phpunit>

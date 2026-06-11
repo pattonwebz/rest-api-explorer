@@ -4,7 +4,11 @@
     "description": "WordPress REST API Explorer plugin",
     "scripts": {
         "build": "wp-scripts build assets/js/index.js --output-path build",
-        "dev": "wp-scripts start assets/js/index.js --output-path build"
+        "dev": "wp-scripts start assets/js/index.js --output-path build",
+        "test:php": "bash setup-phpunit.sh",
+        "test:php:run": "docker compose exec -T phpunit vendor/bin/phpunit",
+        "test:php:coverage": "docker compose exec -T phpunit env XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-text",
+        "test:php:stop": "docker compose down --remove-orphans"
     },
     "devDependencies": {
         "@wordpress/scripts": "^27.9.0"

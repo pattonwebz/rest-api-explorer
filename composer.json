@@ -23,6 +23,10 @@
     "scripts": {
         "test": "vendor/bin/phpunit",
         "test:coverage": "vendor/bin/phpunit --coverage-text",
-        "test:coverage-html": "vendor/bin/phpunit --coverage-html coverage"
+        "test:coverage-html": "vendor/bin/phpunit --coverage-html coverage",
+        "test:docker": "bash setup-phpunit.sh",
+        "test:docker:run": "docker compose exec -T phpunit vendor/bin/phpunit",
+        "test:docker:coverage": "docker compose exec -T phpunit env XDEBUG_MODE=coverage vendor/bin/phpunit --coverage-text",
+        "test:docker:stop": "docker compose down --remove-orphans"
     }
 }
