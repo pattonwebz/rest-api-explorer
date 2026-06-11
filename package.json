@@ -7,6 +7,6 @@
         "dev": "wp-scripts start assets/js/index.js --output-path build"
     },
     "devDependencies": {
-        "@wordpress/scripts": "^27.0.0"
+        "@wordpress/scripts": "^27.9.0"
     }
 }
