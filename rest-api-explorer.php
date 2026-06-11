@@ -33,6 +33,8 @@ add_action( 'plugins_loaded', function (): void {
 
 add_action( 'rest_api_init', function (): void {
 	RestApiExplorer\Rest\TestController::register();
+	RestApiExplorer\Rest\FavoritesController::register();
+	RestApiExplorer\Rest\ExportController::register();
 } );
 
 register_activation_hook( __FILE__, [ RestApiExplorer\Admin\RouteDiscovery::class, 'clear_cache' ] );
