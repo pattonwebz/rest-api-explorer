@@ -1,10 +1,12 @@
-import { useState, useMemo, useCallback, useEffect } from '@wordpress/element';
+import { useState, useMemo, useCallback, useEffect, useRef } from '@wordpress/element';
 import Sidebar from './components/Sidebar';
 import RouteDetail from './components/RouteDetail';
 import HistoryPanel from './components/HistoryPanel';
 import FavoritesPanel from './components/FavoritesPanel';
 import SaveFavoriteModal from './components/SaveFavoriteModal';
 import DocsPanel from './components/DocsPanel';
+import ToastStack from './components/Toast';
+import { useToast } from './hooks/useToast';
 
 const HISTORY_KEY = 'rae_request_history';
 const MAX_HISTORY  = 100;
@@ -23,10 +25,14 @@ function saveHistory( history ) {
 
 // ── Favorites REST helpers ──────────────────────────────────────────────────
 
-async function apiFetch( url, opts = {} ) {
+async function apiFetch( url, { headers: extraHeaders, ...rest } = {} ) {
 	const res = await window.fetch( url, {
-		headers: { 'X-WP-Nonce': window.restApiExplorer.nonce, 'Content-Type': 'application/json', ...opts.headers },
-		...opts,
+		headers: {
+			'X-WP-Nonce': window.restApiExplorer.nonce,
+			'Content-Type': 'application/json',
+			...( extraHeaders ?? {} ),
+		},
+		...rest,
 	} );
 	if ( ! res.ok ) throw new Error( `HTTP ${ res.status }` );
 	return res.json();
@@ -39,34 +45,42 @@ function favoritesUrl( suffix = '' ) {
 // ── App ─────────────────────────────────────────────────────────────────────
 
 export default function App( { initialRoutes, homeUrl, ajaxUrl, clearNonce, nonce } ) {
-	const [ routes, setRoutes ]           = useState( initialRoutes );
+	const [ routes, setRoutes ]               = useState( initialRoutes );
 	const [ selectedRoute, setSelectedRoute ] = useState( null );
-	const [ search, setSearch ]           = useState( '' );
-	const [ filters, setFilters ]         = useState( { method: '', namespace: '' } );
-	const [ refreshing, setRefreshing ]   = useState( false );
+	const [ search, setSearch ]               = useState( '' );
+	const [ filters, setFilters ]             = useState( { method: '', namespace: '' } );
+	const [ refreshing, setRefreshing ]       = useState( false );
+	const [ refreshError, setRefreshError ]   = useState( false );
+	const [ sidebarOpen, setSidebarOpen ]     = useState( true );
 
 	// Multi-view navigation
-	const [ mainView, setMainView ]       = useState( 'routes' ); // 'routes'|'history'|'favorites'|'docs'
+	const [ mainView, setMainView ]   = useState( 'routes' );
 
 	// Request history (localStorage)
 	const [ requestHistory, setRequestHistory ] = useState( loadHistory );
 
 	// Favorites (server-side)
-	const [ favorites, setFavorites ]     = useState( [] );
+	const [ favorites, setFavorites ] = useState( [] );
+	const [ favsLoading, setFavsLoading ] = useState( true );
 
 	// Pending save modal
-	const [ pendingSave, setPendingSave ] = useState( null ); // { requestData } | null
+	const [ pendingSave, setPendingSave ] = useState( null );
 
 	// Preloaded request from history or favorites
-	const [ preloadKey, setPreloadKey ]       = useState( 0 );
+	const [ preloadKey, setPreloadKey ]           = useState( 0 );
 	const [ preloadedRequest, setPreloadedRequest ] = useState( null );
+
+	// Toasts
+	const { toasts, toast, removeToast } = useToast();
 
 	// ── Favorites bootstrap ────────────────────────────────────────────────
 
 	useEffect( () => {
+		setFavsLoading( true );
 		apiFetch( favoritesUrl() )
 			.then( ( data ) => setFavorites( data.favorites ?? [] ) )
-			.catch( () => {} );
+			.catch( () => {} )
+			.finally( () => setFavsLoading( false ) );
 	}, [] );
 
 	// ── Filtered routes ────────────────────────────────────────────────────
@@ -90,20 +104,26 @@ export default function App( { initialRoutes, homeUrl, ajaxUrl, clearNonce, nonc
 
 	const handleRefresh = useCallback( async () => {
 		setRefreshing( true );
+		setRefreshError( false );
 		try {
 			const body = new FormData();
 			body.append( 'action', 'rae_clear_cache' );
 			body.append( '_ajax_nonce', clearNonce );
 
 			const res  = await window.fetch( ajaxUrl, { method: 'POST', body } );
+			if ( ! res.ok ) throw new Error( `HTTP ${ res.status }` );
 			const data = await res.json();
 
 			if ( data.success ) {
 				setRoutes( data.data.routes );
 				setSelectedRoute( null );
+				toast.success( 'Routes refreshed.' );
+			} else {
+				throw new Error( 'Server returned failure' );
 			}
 		} catch {
-			// Silently fail — routes are still usable
+			setRefreshError( true );
+			toast.error( 'Could not refresh routes — check your connection and try again.' );
 		} finally {
 			setRefreshing( false );
 		}
@@ -123,22 +143,16 @@ export default function App( { initialRoutes, homeUrl, ajaxUrl, clearNonce, nonc
 	}, [] );
 
 	const handleLoadFromHistory = useCallback( ( historyItem ) => {
-		// Find matching route in routes list
 		const route = routes.find( ( r ) => r.path === historyItem.path );
-		if ( route ) {
-			setSelectedRoute( route );
-		}
+		if ( route ) setSelectedRoute( route );
 		setPreloadedRequest( historyItem );
 		setPreloadKey( ( k ) => k + 1 );
 		setMainView( 'routes' );
 	}, [ routes ] );
 
-	// Favorites
 	const handleLoadFromFavorites = useCallback( ( fav ) => {
 		const route = routes.find( ( r ) => r.path === fav.path );
-		if ( route ) {
-			setSelectedRoute( route );
-		}
+		if ( route ) setSelectedRoute( route );
 		setPreloadedRequest( fav );
 		setPreloadKey( ( k ) => k + 1 );
 		setMainView( 'routes' );
@@ -157,10 +171,10 @@ export default function App( { initialRoutes, homeUrl, ajaxUrl, clearNonce, nonc
 				body: JSON.stringify( body ),
 			} );
 			setFavorites( data.favorites ?? [] );
-		} catch {
-			// Silently fail
-		} finally {
+			toast.success( `Saved "${ name }"` );
 			setPendingSave( null );
+		} catch {
+			toast.error( 'Failed to save favorite — please try again.' );
 		}
 	}, [ pendingSave ] );
 
@@ -169,7 +183,7 @@ export default function App( { initialRoutes, homeUrl, ajaxUrl, clearNonce, nonc
 			const data = await apiFetch( favoritesUrl( `/${ id }` ), { method: 'DELETE' } );
 			setFavorites( data.favorites ?? [] );
 		} catch {
-			// Silently fail
+			toast.error( 'Could not delete favorite.' );
 		}
 	}, [] );
 
@@ -180,8 +194,9 @@ export default function App( { initialRoutes, homeUrl, ajaxUrl, clearNonce, nonc
 				body: JSON.stringify( { name, folder } ),
 			} );
 			setFavorites( data.favorites ?? [] );
+			toast.success( 'Favorite updated.' );
 		} catch {
-			// Silently fail
+			toast.error( 'Could not update favorite.' );
 		}
 	}, [] );
 
@@ -204,19 +219,35 @@ export default function App( { initialRoutes, homeUrl, ajaxUrl, clearNonce, nonc
 	return (
 		<div className="rae-app">
 			<header className="rae-header">
-				<h1 className="rae-header__title">REST API Explorer</h1>
-				<nav className="rae-nav">
+				<div className="rae-header__left">
+					{ mainView === 'routes' && (
+						<button
+							className="rae-sidebar-toggle"
+							onClick={ () => setSidebarOpen( ( o ) => ! o ) }
+							type="button"
+							aria-label={ sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar' }
+							title={ sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar' }
+						>
+							{ sidebarOpen ? '◀' : '▶' }
+						</button>
+					) }
+					<h1 className="rae-header__title">REST API Explorer</h1>
+				</div>
+
+				<nav className="rae-nav" aria-label="Main navigation">
 					{ NAV_TABS.map( ( tab ) => (
 						<button
 							key={ tab.id }
 							className={ `rae-nav__tab ${ mainView === tab.id ? 'rae-nav__tab--active' : '' }` }
 							onClick={ () => setMainView( tab.id ) }
 							type="button"
+							aria-current={ mainView === tab.id ? 'page' : undefined }
 						>
 							{ tab.label }
 						</button>
 					) ) }
 				</nav>
+
 				<button
 					className={ `rae-btn rae-btn--secondary ${ refreshing ? 'rae-btn--loading' : '' }` }
 					onClick={ handleRefresh }
@@ -226,6 +257,15 @@ export default function App( { initialRoutes, homeUrl, ajaxUrl, clearNonce, nonc
 					{ refreshing ? 'Refreshing…' : '↺ Refresh Routes' }
 				</button>
 			</header>
+
+			{ refreshError && mainView === 'routes' && (
+				<div className="rae-error-banner" role="alert">
+					<span>Could not refresh routes — check your network connection.</span>
+					<button className="rae-btn rae-btn--secondary rae-btn--sm" onClick={ handleRefresh } type="button">
+						Retry
+					</button>
+				</div>
+			) }
 
 			{ mainView === 'routes' && (
 				<div className="rae-layout">
@@ -239,9 +279,10 @@ export default function App( { initialRoutes, homeUrl, ajaxUrl, clearNonce, nonc
 						filters={ filters }
 						onFiltersChange={ setFilters }
 						namespaces={ namespaces }
+						collapsed={ ! sidebarOpen }
 					/>
 
-					<main className="rae-main">
+					<main className="rae-main" id="rae-main-content">
 						{ selectedRoute ? (
 							<RouteDetail
 								key={ selectedRoute.path }
@@ -255,7 +296,7 @@ export default function App( { initialRoutes, homeUrl, ajaxUrl, clearNonce, nonc
 							/>
 						) : (
 							<div className="rae-placeholder">
-								<span className="dashicons dashicons-rest-api rae-placeholder__icon" />
+								<span className="dashicons dashicons-rest-api rae-placeholder__icon" aria-hidden="true" />
 								<h2>Select a route to explore</h2>
 								<p>
 									<strong>{ routes.length }</strong> routes registered on this site.
@@ -281,6 +322,7 @@ export default function App( { initialRoutes, homeUrl, ajaxUrl, clearNonce, nonc
 				<main className="rae-main rae-main--full">
 					<FavoritesPanel
 						favorites={ favorites }
+						loading={ favsLoading }
 						onLoad={ handleLoadFromFavorites }
 						onDelete={ handleFavoriteDelete }
 						onRename={ handleFavoriteRename }
@@ -290,7 +332,7 @@ export default function App( { initialRoutes, homeUrl, ajaxUrl, clearNonce, nonc
 
 			{ mainView === 'docs' && (
 				<main className="rae-main rae-main--full">
-					<DocsPanel routes={ routes } homeUrl={ homeUrl } />
+					<DocsPanel routes={ routes } homeUrl={ homeUrl } toast={ toast } />
 				</main>
 			) }
 
@@ -302,6 +344,8 @@ export default function App( { initialRoutes, homeUrl, ajaxUrl, clearNonce, nonc
 					onClose={ () => setPendingSave( null ) }
 				/>
 			) }
+
+			<ToastStack toasts={ toasts } onRemove={ removeToast } />
 		</div>
 	);
 }
