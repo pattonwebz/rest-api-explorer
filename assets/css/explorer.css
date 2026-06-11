@@ -786,3 +786,436 @@
 	opacity: 0.6;
 	cursor: not-allowed;
 }
+
+/* ============================================================
+   Phase 3 additions: Nav, History, Favorites, Save Modal, Docs
+   ============================================================ */
+
+/* Top nav -------------------------------------------------- */
+
+.rae-nav {
+	display: flex;
+	gap: 2px;
+}
+
+.rae-nav__tab {
+	padding: 6px 14px;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	background: transparent;
+	color: #50575e;
+	font-size: 13px;
+	cursor: pointer;
+	transition: background 0.1s, color 0.1s;
+}
+
+.rae-nav__tab:hover {
+	background: #f0f0f1;
+	color: #1d2327;
+}
+
+.rae-nav__tab--active {
+	background: #2271b1;
+	color: #fff;
+	border-color: #2271b1;
+}
+
+/* Full-panel layout (history / favorites / docs) ----------- */
+
+.rae-main--full {
+	padding: 0;
+	overflow: hidden;
+}
+
+.rae-fullpanel {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	overflow: hidden;
+	background: #fff;
+}
+
+.rae-fullpanel__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14px 20px;
+	border-bottom: 1px solid #c3c4c7;
+	flex-shrink: 0;
+}
+
+.rae-fullpanel__title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.rae-fullpanel__title h2 {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.rae-fullpanel__filters,
+.rae-fullpanel__search {
+	display: flex;
+	gap: 8px;
+	padding: 10px 20px;
+	border-bottom: 1px solid #f0f0f1;
+	flex-shrink: 0;
+}
+
+.rae-fullpanel__empty {
+	padding: 40px 20px;
+	text-align: center;
+	color: #646970;
+}
+
+/* Badge (route count, item count) */
+.rae-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 1px 7px;
+	background: #dcdcde;
+	border-radius: 10px;
+	font-size: 11px;
+	font-weight: 600;
+	color: #50575e;
+}
+
+/* History panel -------------------------------------------- */
+
+.rae-history-list {
+	flex: 1;
+	overflow-y: auto;
+}
+
+.rae-history-item {
+	display: block;
+	width: 100%;
+	padding: 10px 20px;
+	background: transparent;
+	border: none;
+	border-bottom: 1px solid #f0f0f1;
+	text-align: left;
+	cursor: pointer;
+	transition: background 0.1s;
+}
+
+.rae-history-item:hover {
+	background: #f6f7f7;
+}
+
+.rae-history-item__row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 4px;
+}
+
+.rae-history-item__path {
+	font-size: 12px;
+	font-family: monospace;
+	color: #1d2327;
+}
+
+.rae-history-item__timing {
+	font-size: 11px;
+	color: #646970;
+}
+
+.rae-history-item__time {
+	margin-left: auto;
+	font-size: 11px;
+	color: #646970;
+}
+
+.rae-status-code {
+	font-size: 11px;
+	font-weight: 700;
+	padding: 1px 5px;
+	border-radius: 3px;
+}
+
+.rae-status-code--ok         { background: #d8f5e0; color: #1a4731; }
+.rae-status-code--client-err { background: #fce5e5; color: #6b0000; }
+.rae-status-code--server-err { background: #fce5e5; color: #6b0000; }
+.rae-status-code--other      { background: #f0f0f1; color: #50575e; }
+.rae-status-code--none       { background: #f0f0f1; color: #50575e; }
+
+/* Favorites panel ------------------------------------------ */
+
+.rae-favorites-list {
+	flex: 1;
+	overflow-y: auto;
+	padding: 0 20px 20px;
+}
+
+.rae-favorites-folder {
+	margin-bottom: 16px;
+}
+
+.rae-favorites-folder__name {
+	padding: 8px 0 4px;
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: #646970;
+	border-bottom: 1px solid #f0f0f1;
+	margin-bottom: 4px;
+}
+
+.rae-fav-item {
+	display: flex;
+	align-items: center;
+	border-radius: 4px;
+	padding: 2px 4px;
+	transition: background 0.1s;
+}
+
+.rae-fav-item:hover {
+	background: #f6f7f7;
+}
+
+.rae-fav-item--editing {
+	flex-direction: column;
+	align-items: stretch;
+	gap: 6px;
+	background: #f6f7f7;
+	padding: 8px;
+}
+
+.rae-fav-item__load {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 4px;
+	background: transparent;
+	border: none;
+	text-align: left;
+	cursor: pointer;
+}
+
+.rae-fav-item__name {
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.rae-fav-item__path {
+	font-family: monospace;
+	font-size: 11px;
+	color: #646970;
+}
+
+.rae-fav-item__actions {
+	display: flex;
+	gap: 4px;
+	opacity: 0;
+	transition: opacity 0.1s;
+}
+
+.rae-fav-item:hover .rae-fav-item__actions {
+	opacity: 1;
+}
+
+.rae-fav-item__edit-actions {
+	display: flex;
+	gap: 6px;
+}
+
+/* Icon buttons */
+.rae-icon-btn {
+	padding: 2px 6px;
+	background: transparent;
+	border: 1px solid #c3c4c7;
+	border-radius: 3px;
+	cursor: pointer;
+	font-size: 13px;
+	color: #646970;
+	line-height: 1;
+}
+
+.rae-icon-btn:hover {
+	background: #f0f0f1;
+	color: #1d2327;
+}
+
+.rae-icon-btn--danger:hover {
+	background: #fce5e5;
+	border-color: #cc1818;
+	color: #cc1818;
+}
+
+/* Save Favorite Modal -------------------------------------- */
+
+.rae-modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0,0,0,0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 100000;
+}
+
+.rae-modal {
+	background: #fff;
+	border-radius: 6px;
+	width: 420px;
+	max-width: calc(100vw - 32px);
+	box-shadow: 0 4px 32px rgba(0,0,0,0.2);
+}
+
+.rae-modal__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14px 16px;
+	border-bottom: 1px solid #c3c4c7;
+}
+
+.rae-modal__header h3 {
+	margin: 0;
+	font-size: 15px;
+}
+
+.rae-modal__close {
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	font-size: 16px;
+	color: #646970;
+	padding: 0 4px;
+}
+
+.rae-modal__close:hover { color: #1d2327; }
+
+.rae-modal__preview {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 16px;
+	background: #f6f7f7;
+	border-bottom: 1px solid #c3c4c7;
+	font-size: 12px;
+}
+
+.rae-modal__preview code {
+	font-family: monospace;
+	color: #1d2327;
+}
+
+.rae-modal__body {
+	padding: 16px;
+	display: flex;
+	flex-direction: column;
+}
+
+.rae-modal__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 20px;
+}
+
+.rae-folder-row {
+	display: flex;
+	gap: 4px;
+	margin-bottom: 8px;
+}
+
+/* Small size variants */
+.rae-btn--sm {
+	padding: 4px 10px;
+	font-size: 12px;
+}
+
+.rae-input--sm,
+.rae-select--sm {
+	padding: 4px 8px;
+	font-size: 12px;
+}
+
+/* Docs panel ----------------------------------------------- */
+
+.rae-docs-exports {
+	display: flex;
+	gap: 6px;
+}
+
+.rae-docs-content {
+	flex: 1;
+	overflow-y: auto;
+	padding: 0 20px 40px;
+}
+
+.rae-docs-ns {
+	margin-bottom: 32px;
+}
+
+.rae-docs-ns__title {
+	font-size: 14px;
+	font-weight: 700;
+	color: #1d2327;
+	padding: 12px 0 6px;
+	border-bottom: 2px solid #2271b1;
+	margin-bottom: 12px;
+}
+
+.rae-docs-route {
+	margin-bottom: 20px;
+	padding: 12px;
+	background: #f6f7f7;
+	border: 1px solid #e0e0e0;
+	border-radius: 4px;
+}
+
+.rae-docs-route__header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 10px;
+	flex-wrap: wrap;
+}
+
+.rae-docs-route__path {
+	font-family: monospace;
+	font-size: 13px;
+	color: #1d2327;
+	font-weight: 600;
+}
+
+.rae-docs-route__desc {
+	font-size: 12px;
+	color: #646970;
+}
+
+.rae-docs-route__args {
+	margin-bottom: 10px;
+}
+
+.rae-docs-route__curl {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.rae-code {
+	flex: 1;
+	background: #1e1e1e;
+	color: #d4d4d4;
+	padding: 10px 12px;
+	border-radius: 4px;
+	font-family: 'Consolas', 'Monaco', monospace;
+	font-size: 12px;
+	overflow-x: auto;
+	white-space: pre;
+	margin: 0;
+}
+
+.rae-code--sm {
+	font-size: 11px;
+	padding: 8px 10px;
+}

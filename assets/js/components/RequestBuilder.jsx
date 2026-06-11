@@ -19,20 +19,35 @@ function buildInitialParams( args ) {
 	return params;
 }
 
-export default function RequestBuilder( { route, endpoint, nonce, homeUrl, onResponse } ) {
-	const [ method, setMethod ]     = useState( endpoint.methods[ 0 ] || 'GET' );
-	const [ params, setParams ]     = useState( () => buildInitialParams( endpoint.args ) );
-	const [ body, setBody ]         = useState( '{}' );
-	const [ bodyMode, setBodyMode ] = useState( 'form' ); // 'form' | 'raw'
-	const [ authType, setAuthType ] = useState( 'cookie' );
-	const [ authExtra, setAuthExtra ] = useState( { username: '', password: '', token: '' } );
+export default function RequestBuilder( {
+	route, endpoint, nonce, homeUrl,
+	onResponse, onAddHistory, onSaveFavorite,
+	preloadedRequest,
+} ) {
+	const initialMethod = preloadedRequest?.method ?? endpoint.methods[ 0 ] ?? 'GET';
+	const initialParams = preloadedRequest?.params ?? buildInitialParams( endpoint.args );
+	const initialBody   = preloadedRequest?.body   ? JSON.stringify( preloadedRequest.body, null, 2 ) : '{}';
+	const initialAuth   = preloadedRequest?.auth?.type ?? 'cookie';
+
+	const [ method, setMethod ]     = useState( initialMethod );
+	const [ params, setParams ]     = useState( initialParams );
+	const [ body, setBody ]         = useState( initialBody );
+	const [ bodyMode, setBodyMode ] = useState( 'form' );
+	const [ authType, setAuthType ] = useState( initialAuth );
+	const [ authExtra, setAuthExtra ] = useState( {
+		username: preloadedRequest?.auth?.username ?? '',
+		password: preloadedRequest?.auth?.password ?? '',
+		token:    preloadedRequest?.auth?.token    ?? '',
+	} );
 	const [ loading, setLoading ]   = useState( false );
 
-	// Re-initialize when route/endpoint changes
+	// Re-initialize when endpoint changes (but NOT when preloadedRequest changes — that's handled via key prop)
 	useEffect( () => {
 		setMethod( endpoint.methods[ 0 ] || 'GET' );
 		setParams( buildInitialParams( endpoint.args ) );
 		setBody( '{}' );
+		setAuthType( 'cookie' );
+		setAuthExtra( { username: '', password: '', token: '' } );
 	}, [ route.path, endpoint ] );
 
 	const queryArgs = endpoint.args.filter( ( a ) =>
@@ -49,7 +64,7 @@ export default function RequestBuilder( { route, endpoint, nonce, homeUrl, onRes
 
 	const handleSend = async () => {
 		setLoading( true );
-		onResponse( null ); // clear previous response
+		onResponse( null );
 
 		let parsedBody = {};
 		if ( hasBody ) {
@@ -57,11 +72,7 @@ export default function RequestBuilder( { route, endpoint, nonce, homeUrl, onRes
 				try {
 					parsedBody = JSON.parse( body );
 				} catch {
-					onResponse( {
-						success: false,
-						error: 'Invalid JSON in request body',
-						elapsed_ms: 0,
-					} );
+					onResponse( { success: false, error: 'Invalid JSON in request body', elapsed_ms: 0 } );
 					setLoading( false );
 					return;
 				}
@@ -70,7 +81,6 @@ export default function RequestBuilder( { route, endpoint, nonce, homeUrl, onRes
 			}
 		}
 
-		// Filter out empty params for GET
 		const cleanParams = {};
 		for ( const [ k, v ] of Object.entries( params ) ) {
 			if ( v !== '' && v !== null && v !== undefined ) {
@@ -83,10 +93,7 @@ export default function RequestBuilder( { route, endpoint, nonce, homeUrl, onRes
 		try {
 			const res = await fetch( `${ homeUrl }/rest-api-explorer/v1/test-request`, {
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-WP-Nonce': nonce,
-				},
+				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': nonce },
 				body: JSON.stringify( {
 					method,
 					path: route.path,
@@ -99,14 +106,41 @@ export default function RequestBuilder( { route, endpoint, nonce, homeUrl, onRes
 
 			const data = await res.json();
 			onResponse( data );
+
+			// Add to history
+			if ( onAddHistory ) {
+				onAddHistory( {
+					id:         `${ Date.now() }-${ Math.random().toString( 36 ).slice( 2 ) }`,
+					timestamp:  Date.now(),
+					method,
+					path:       route.path,
+					params:     hasBody ? {} : cleanParams,
+					body:       parsedBody,
+					auth,
+					statusCode: data.status_code ?? null,
+					elapsedMs:  data.elapsed_ms ?? 0,
+				} );
+			}
 		} catch ( err ) {
-			onResponse( {
-				success: false,
-				error: err.message || 'Network error',
-				elapsed_ms: 0,
-			} );
+			onResponse( { success: false, error: err.message || 'Network error', elapsed_ms: 0 } );
 		} finally {
 			setLoading( false );
+		}
+	};
+
+	const handleSave = () => {
+		if ( onSaveFavorite ) {
+			const cleanParams = {};
+			for ( const [ k, v ] of Object.entries( params ) ) {
+				if ( v !== '' && v !== null && v !== undefined ) cleanParams[ k ] = v;
+			}
+			onSaveFavorite( {
+				method,
+				path:   route.path,
+				params: cleanParams,
+				body:   hasBody ? ( bodyMode === 'raw' ? body : params ) : {},
+				auth:   { type: authType, ...authExtra },
+			} );
 		}
 	};
 
@@ -254,6 +288,15 @@ export default function RequestBuilder( { route, endpoint, nonce, homeUrl, onRes
 				>
 					{ loading ? 'Sending…' : 'Send Request' }
 				</button>
+				{ onSaveFavorite && (
+					<button
+						className="rae-btn rae-btn--secondary"
+						onClick={ handleSave }
+						type="button"
+					>
+						Save
+					</button>
+				) }
 			</div>
 		</div>
 	);

@@ -12,16 +12,18 @@ const AUTH_META = {
 	none:          { label: 'Unknown',       color: '#aaa' },
 };
 
-export default function RouteDetail( { route, homeUrl, nonce } ) {
-	const [ mainTab, setMainTab ]       = useState( 'details' );
+export default function RouteDetail( {
+	route, homeUrl, nonce,
+	preloadKey, preloadedRequest,
+	onAddHistory, onSaveFavorite,
+} ) {
+	const defaultTab = preloadedRequest ? 'test' : 'details';
+	const [ mainTab, setMainTab ]         = useState( defaultTab );
 	const [ endpointIdx, setEndpointIdx ] = useState( 0 );
-	const [ response, setResponse ]     = useState( null );
+	const [ response, setResponse ]       = useState( null );
 
-	const endpoint = route.endpoints[ endpointIdx ] ?? route.endpoints[ 0 ];
+	const endpoint     = route.endpoints[ endpointIdx ] ?? route.endpoints[ 0 ];
 	const multiEndpoint = route.endpoints.length > 1;
-
-	// Reset state when route changes
-	const routePath = route.path;
 
 	return (
 		<div className="rae-detail">
@@ -82,11 +84,15 @@ export default function RouteDetail( { route, homeUrl, nonce } ) {
 			{ mainTab === 'test' && endpoint && (
 				<div className="rae-test-panel">
 					<RequestBuilder
+						key={ preloadKey }
 						route={ route }
 						endpoint={ endpoint }
 						nonce={ nonce }
 						homeUrl={ homeUrl }
 						onResponse={ setResponse }
+						onAddHistory={ onAddHistory }
+						onSaveFavorite={ onSaveFavorite }
+						preloadedRequest={ preloadedRequest }
 					/>
 					<ResponseDisplay response={ response } />
 				</div>
