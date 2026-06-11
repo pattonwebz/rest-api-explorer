@@ -1219,3 +1219,181 @@
 	font-size: 11px;
 	padding: 8px 10px;
 }
+
+/* ============================================================
+   Phase 4 additions: toast, error banner, sidebar collapse,
+   responsive layout, accessibility, modal error
+   ============================================================ */
+
+/* Toast stack ---------------------------------------------- */
+
+.rae-toast-stack {
+	position: fixed;
+	bottom: 24px;
+	right: 24px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	z-index: 200000;
+	max-width: 380px;
+	width: calc(100vw - 48px);
+}
+
+.rae-toast {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 12px 14px;
+	border-radius: 5px;
+	box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+	font-size: 13px;
+	line-height: 1.4;
+	animation: rae-toast-in 0.15s ease-out;
+}
+
+@keyframes rae-toast-in {
+	from { opacity: 0; transform: translateY(8px); }
+	to   { opacity: 1; transform: translateY(0); }
+}
+
+.rae-toast--success { background: #edfaef; border: 1px solid #7ad498; color: #1a4731; }
+.rae-toast--error   { background: #fce5e5; border: 1px solid #e05252; color: #6b0000; }
+.rae-toast--info    { background: #e8f3fb; border: 1px solid #72aee6; color: #1d2327; }
+
+.rae-toast__icon {
+	font-size: 15px;
+	flex-shrink: 0;
+	line-height: 1.2;
+}
+
+.rae-toast__message {
+	flex: 1;
+}
+
+.rae-toast__close {
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	font-size: 13px;
+	color: inherit;
+	opacity: 0.7;
+	padding: 0 2px;
+	flex-shrink: 0;
+	line-height: 1;
+}
+
+.rae-toast__close:hover { opacity: 1; }
+
+/* Error banner --------------------------------------------- */
+
+.rae-error-banner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 10px 20px;
+	background: #fce5e5;
+	border-bottom: 1px solid #e05252;
+	color: #6b0000;
+	font-size: 13px;
+	flex-shrink: 0;
+}
+
+/* Sidebar toggle + collapse -------------------------------- */
+
+.rae-header__left {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.rae-sidebar-toggle {
+	background: transparent;
+	border: 1px solid #c3c4c7;
+	border-radius: 3px;
+	padding: 3px 8px;
+	cursor: pointer;
+	font-size: 12px;
+	color: #646970;
+	line-height: 1;
+	flex-shrink: 0;
+}
+
+.rae-sidebar-toggle:hover {
+	background: #f0f0f1;
+	color: #1d2327;
+}
+
+.rae-sidebar--collapsed {
+	width: 0;
+	padding: 0;
+	overflow: hidden;
+	border: none;
+}
+
+/* Modal error message ------------------------------------- */
+
+.rae-modal__error {
+	margin: 10px 0 0;
+	padding: 8px 10px;
+	background: #fce5e5;
+	border: 1px solid #e05252;
+	border-radius: 3px;
+	color: #6b0000;
+	font-size: 12px;
+}
+
+/* Responsive ----------------------------------------------- */
+
+@media ( max-width: 900px ) {
+	.rae-header {
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+
+	.rae-nav {
+		order: 3;
+		width: 100%;
+		flex-wrap: wrap;
+	}
+
+	.rae-sidebar {
+		width: 260px;
+	}
+}
+
+@media ( max-width: 640px ) {
+	.rae-app {
+		height: auto;
+		min-height: calc(100vh - 32px);
+	}
+
+	.rae-layout {
+		flex-direction: column;
+		height: auto;
+	}
+
+	.rae-sidebar {
+		width: 100%;
+		max-height: 40vh;
+		border-right: none;
+		border-bottom: 1px solid #c3c4c7;
+	}
+
+	.rae-sidebar--collapsed {
+		width: 100%;
+		max-height: 0;
+	}
+
+	.rae-main {
+		overflow: visible;
+	}
+
+	.rae-detail {
+		padding-bottom: 40px;
+	}
+
+	.rae-builder__url-bar {
+		flex-wrap: wrap;
+	}
+}
