@@ -61,8 +61,9 @@ class TestController {
 			$base_url = add_query_arg( $params, $base_url );
 		}
 
-		// Build headers
-		$headers = self::build_headers( $auth, $custom_headers );
+		// Build auth + headers
+		$request_auth = self::build_request_auth( $auth, $custom_headers );
+		$headers      = $request_auth['headers'];
 
 		// Execute request
 		$start   = microtime( true );
@@ -72,6 +73,10 @@ class TestController {
 			'timeout'   => 30,
 			'sslverify' => apply_filters( 'https_local_ssl_verify', false ),
 		];
+
+		if ( ! empty( $request_auth['cookies'] ) ) {
+			$wp_args['cookies'] = $request_auth['cookies'];
+		}
 
 		if ( in_array( $method, [ 'POST', 'PUT', 'PATCH' ], true ) && ! empty( $body ) ) {
 			$wp_args['body']    = wp_json_encode( $body );
@@ -125,8 +130,9 @@ class TestController {
 		);
 	}
 
-	private static function build_headers( array $auth, array $custom ): array {
+	private static function build_request_auth( array $auth, array $custom ): array {
 		$headers = [];
+		$cookies = [];
 
 		$auth_type = $auth['type'] ?? 'none';
 
@@ -134,6 +140,15 @@ class TestController {
 			case 'cookie':
 				$nonce = wp_create_nonce( 'wp_rest' );
 				$headers['X-WP-Nonce'] = $nonce;
+
+				foreach ( $_COOKIE as $cookie_name => $cookie_value ) {
+					$cookies[] = new \WP_Http_Cookie(
+						[
+							'name'  => (string) $cookie_name,
+							'value' => wp_unslash( (string) $cookie_value ),
+						]
+					);
+				}
 				break;
 
 			case 'basic':
@@ -153,7 +168,10 @@ class TestController {
 			$headers[ sanitize_text_field( $k ) ] = sanitize_text_field( $v );
 		}
 
-		return $headers;
+		return [
+			'headers' => $headers,
+			'cookies' => $cookies,
+		];
 	}
 
 	private static function describe_request( string $method, string $url, array $args ): array {
@@ -163,10 +181,20 @@ class TestController {
 			$safe_headers['Authorization'] = '**redacted**';
 		}
 
+		$cookie_names = [];
+		if ( ! empty( $args['cookies'] ) && is_array( $args['cookies'] ) ) {
+			foreach ( $args['cookies'] as $cookie ) {
+				if ( $cookie instanceof \WP_Http_Cookie ) {
+					$cookie_names[] = $cookie->name;
+				}
+			}
+		}
+
 		return [
 			'method'  => $method,
 			'url'     => $url,
 			'headers' => $safe_headers,
+			'cookies' => $cookie_names,
 			'body'    => $args['body'] ?? null,
 		];
 	}
