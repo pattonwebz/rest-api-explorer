@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from '@wordpress/element';
 import Sidebar from './components/Sidebar';
 import RouteDetail from './components/RouteDetail';
 
-export default function App( { initialRoutes, homeUrl, ajaxUrl, clearNonce } ) {
+export default function App( { initialRoutes, homeUrl, ajaxUrl, clearNonce, nonce } ) {
 	const [ routes, setRoutes ]           = useState( initialRoutes );
 	const [ selectedRoute, setSelectedRoute ] = useState( null );
 	const [ search, setSearch ]           = useState( '' );
@@ -74,7 +74,7 @@ export default function App( { initialRoutes, homeUrl, ajaxUrl, clearNonce } ) {
 
 				<main className="rae-main">
 					{ selectedRoute ? (
-						<RouteDetail route={ selectedRoute } homeUrl={ homeUrl } />
+						<RouteDetail route={ selectedRoute } homeUrl={ homeUrl } nonce={ nonce } />
 					) : (
 						<div className="rae-placeholder">
 							<span className="dashicons dashicons-rest-api rae-placeholder__icon" />

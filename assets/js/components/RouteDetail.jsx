@@ -1,5 +1,7 @@
 import { useState } from '@wordpress/element';
 import { MethodBadge } from './RouteItem';
+import RequestBuilder from './RequestBuilder';
+import ResponseDisplay from './ResponseDisplay';
 
 const AUTH_META = {
 	public:        { label: 'Public',        color: '#00a32a' },
@@ -10,11 +12,16 @@ const AUTH_META = {
 	none:          { label: 'Unknown',       color: '#aaa' },
 };
 
-export default function RouteDetail( { route, homeUrl } ) {
-	const [ activeTab, setActiveTab ] = useState( 0 );
+export default function RouteDetail( { route, homeUrl, nonce } ) {
+	const [ mainTab, setMainTab ]       = useState( 'details' );
+	const [ endpointIdx, setEndpointIdx ] = useState( 0 );
+	const [ response, setResponse ]     = useState( null );
 
-	const fullUrl = `${ homeUrl }${ route.path }`;
+	const endpoint = route.endpoints[ endpointIdx ] ?? route.endpoints[ 0 ];
 	const multiEndpoint = route.endpoints.length > 1;
+
+	// Reset state when route changes
+	const routePath = route.path;
 
 	return (
 		<div className="rae-detail">
@@ -25,7 +32,7 @@ export default function RouteDetail( { route, homeUrl } ) {
 					) ) }
 				</div>
 				<h2 className="rae-detail__path">{ route.path }</h2>
-				<p className="rae-detail__url">{ fullUrl }</p>
+				<p className="rae-detail__url">{ homeUrl }{ route.path }</p>
 				<div className="rae-detail__meta">
 					<span className="rae-tag">{ route.namespace }</span>
 				</div>
@@ -34,13 +41,32 @@ export default function RouteDetail( { route, homeUrl } ) {
 				) }
 			</div>
 
+			{/* Main tabs: Details / Test */}
+			<div className="rae-tabs rae-main-tabs">
+				<button
+					className={ `rae-tab ${ mainTab === 'details' ? 'rae-tab--active' : '' }` }
+					onClick={ () => setMainTab( 'details' ) }
+					type="button"
+				>
+					Details
+				</button>
+				<button
+					className={ `rae-tab ${ mainTab === 'test' ? 'rae-tab--active' : '' }` }
+					onClick={ () => setMainTab( 'test' ) }
+					type="button"
+				>
+					Test
+				</button>
+			</div>
+
+			{/* Per-endpoint tabs when multiple exist */}
 			{ multiEndpoint && (
-				<div className="rae-tabs">
+				<div className="rae-tabs rae-endpoint-tabs">
 					{ route.endpoints.map( ( ep, i ) => (
 						<button
 							key={ i }
-							className={ `rae-tab ${ activeTab === i ? 'rae-tab--active' : '' }` }
-							onClick={ () => setActiveTab( i ) }
+							className={ `rae-tab rae-tab--sm ${ endpointIdx === i ? 'rae-tab--active' : '' }` }
+							onClick={ () => setEndpointIdx( i ) }
 							type="button"
 						>
 							{ ep.methods.join( ' / ' ) }
@@ -49,16 +75,27 @@ export default function RouteDetail( { route, homeUrl } ) {
 				</div>
 			) }
 
-			{ route.endpoints.map( ( endpoint, i ) => (
-				( ! multiEndpoint || i === activeTab ) && (
-					<EndpointPanel key={ i } endpoint={ endpoint } />
-				)
-			) ) }
+			{ mainTab === 'details' && endpoint && (
+				<EndpointDetails endpoint={ endpoint } />
+			) }
+
+			{ mainTab === 'test' && endpoint && (
+				<div className="rae-test-panel">
+					<RequestBuilder
+						route={ route }
+						endpoint={ endpoint }
+						nonce={ nonce }
+						homeUrl={ homeUrl }
+						onResponse={ setResponse }
+					/>
+					<ResponseDisplay response={ response } />
+				</div>
+			) }
 		</div>
 	);
 }
 
-function EndpointPanel( { endpoint } ) {
+function EndpointDetails( { endpoint } ) {
 	const auth = AUTH_META[ endpoint.auth_level ] || AUTH_META.none;
 
 	return (
@@ -117,10 +154,10 @@ function EndpointPanel( { endpoint } ) {
 									</td>
 									<td>
 										{ arg.description || <span className="rae-muted">—</span> }
-										{ ( arg.minimum !== null && arg.minimum !== undefined ) && (
+										{ arg.minimum !== null && arg.minimum !== undefined && (
 											<div className="rae-muted">Min: { arg.minimum }</div>
 										) }
-										{ ( arg.maximum !== null && arg.maximum !== undefined ) && (
+										{ arg.maximum !== null && arg.maximum !== undefined && (
 											<div className="rae-muted">Max: { arg.maximum }</div>
 										) }
 									</td>
