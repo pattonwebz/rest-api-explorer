@@ -12,6 +12,7 @@ export default function Sidebar( {
 	filters,
 	onFiltersChange,
 	namespaces,
+	collapsed,
 } ) {
 	const handleMethodChange = ( e ) =>
 		onFiltersChange( { ...filters, method: e.target.value } );
@@ -20,6 +21,10 @@ export default function Sidebar( {
 		onFiltersChange( { ...filters, namespace: e.target.value } );
 
 	const hasFilters = search || filters.method || filters.namespace;
+
+	if ( collapsed ) {
+		return <aside className="rae-sidebar rae-sidebar--collapsed" aria-hidden="true" />;
+	}
 
 	return (
 		<aside className="rae-sidebar">

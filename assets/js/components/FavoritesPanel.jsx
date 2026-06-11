@@ -1,7 +1,7 @@
 import { useState } from '@wordpress/element';
 import { MethodBadge } from './RouteItem';
 
-export default function FavoritesPanel( { favorites, onLoad, onDelete, onRename } ) {
+export default function FavoritesPanel( { favorites, loading, onLoad, onDelete, onRename } ) {
 	const [ editingId, setEditingId ]   = useState( null );
 	const [ editName, setEditName ]     = useState( '' );
 	const [ editFolder, setEditFolder ] = useState( '' );
@@ -34,6 +34,17 @@ export default function FavoritesPanel( { favorites, onLoad, onDelete, onRename 
 		onRename( id, editName.trim(), editFolder.trim() );
 		setEditingId( null );
 	};
+
+	if ( loading ) {
+		return (
+			<div className="rae-fullpanel">
+				<div className="rae-fullpanel__header">
+					<div className="rae-fullpanel__title"><h2>Favorites</h2></div>
+				</div>
+				<div className="rae-fullpanel__empty">Loading favorites…</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="rae-fullpanel">
