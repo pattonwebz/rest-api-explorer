@@ -8,14 +8,14 @@ use WP_UnitTestCase;
 /**
  * Verifies that RouteDiscovery returns well-formed route data.
  *
- * These are functional tests — they run against a live WordPress instance
- * with the plugin loaded, so the REST server is fully initialised.
+ * Functional tests — run against a live WordPress instance with the plugin
+ * loaded, so the REST server is fully initialised.
  */
 class RouteDiscoveryTest extends WP_UnitTestCase {
 
     protected function setUp(): void {
         parent::setUp();
-        // Start each test with a cold cache so results are freshly queried.
+        // Cold cache so every test queries routes fresh.
         RouteDiscovery::clear_cache();
     }
 
@@ -40,17 +40,14 @@ class RouteDiscoveryTest extends WP_UnitTestCase {
         }
     }
 
-    public function test_route_methods_are_strings(): void {
+    public function test_route_methods_are_valid_http_verbs(): void {
         $routes = RouteDiscovery::get_routes();
+        $valid  = [ 'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS' ];
 
         foreach ( $routes as $route ) {
             foreach ( $route['methods'] as $method ) {
                 $this->assertIsString( $method );
-                $this->assertMatchesRegularExpression(
-                    '/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)$/',
-                    $method,
-                    "Unexpected HTTP method: {$method}"
-                );
+                $this->assertContains( $method, $valid, "Unexpected HTTP method: {$method}" );
             }
         }
     }
@@ -63,17 +60,17 @@ class RouteDiscoveryTest extends WP_UnitTestCase {
         $this->assertSame( $sorted, $paths, 'Routes should be sorted alphabetically by path.' );
     }
 
-    public function test_get_routes_is_cached_on_second_call(): void {
-        RouteDiscovery::get_routes(); // primes transient
-        $cached = get_transient( 'rae_routes' );
-        $this->assertIsArray( $cached, 'Routes should be stored in a transient after first call.' );
+    public function test_results_are_stored_in_transient_after_first_call(): void {
+        RouteDiscovery::get_routes();
+        $this->assertIsArray(
+            get_transient( 'rae_routes' ),
+            'Routes should be cached in a transient after first call.'
+        );
     }
 
-    public function test_known_wp_core_routes_present(): void {
+    public function test_wp_core_posts_route_is_present(): void {
         $routes = RouteDiscovery::get_routes();
         $paths  = array_column( $routes, 'path' );
-
-        // WordPress core always registers these routes.
         $this->assertContains( '/wp/v2/posts', $paths, 'Expected WP core /wp/v2/posts route.' );
     }
 }

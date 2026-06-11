@@ -2,7 +2,7 @@
 <phpunit
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.6/phpunit.xsd"
-    bootstrap="tests/phpunit/bootstrap.php"
+    bootstrap="tests/bootstrap.php"
     backupGlobals="false"
     colors="true"
     convertErrorsToExceptions="true"
@@ -10,17 +10,21 @@
     convertWarningsToExceptions="true"
 >
     <testsuites>
-        <testsuite name="Functional">
-            <directory>tests/phpunit/Func</directory>
-        </testsuite>
-        <testsuite name="Unit">
-            <directory>tests/phpunit/Unit</directory>
+        <testsuite name="REST API Explorer">
+            <directory suffix="Test.php">./tests</directory>
+            <file>./tests/bootstrap.php</file>
         </testsuite>
     </testsuites>
 
-    <coverage>
+    <!-- PHPUnit 10+ coverage format -->
+    <source>
         <include>
-            <directory>src</directory>
+            <directory>./src</directory>
         </include>
-    </coverage>
+        <exclude>
+            <directory>./tests</directory>
+            <directory>./vendor</directory>
+            <directory>./node_modules</directory>
+        </exclude>
+    </source>
 </phpunit>
